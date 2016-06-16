@@ -2,7 +2,7 @@
 <menu>
   <item>
     <path>civicrm/mailchimp/settings</path>
-    <page_callback>CRM_Mailchimp_Form_Setting</page_callback>
+    <page_callback>CRM_Mailchimp_Controller_Import</page_callback>
     <title>Mailchimp Settings</title>
     <access_arguments>administer CiviCRM</access_arguments>
   </item>

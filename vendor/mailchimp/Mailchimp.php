@@ -287,7 +287,7 @@ class Mailchimp {
         curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
         curl_setopt($ch, CURLOPT_VERBOSE, $this->debug);
         // SSL Options
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $this->ssl_verifypeer);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $this->ssl_verifyhost);
         if ($this->ssl_cainfo) curl_setopt($ch, CURLOPT_CAINFO, $this->ssl_cainfo);
 

@@ -39,45 +39,22 @@ class CRM_Mailchimp_Form_Setting extends CRM_Core_Form {
     
     CRM_Core_Resources::singleton()->addStyleFile('uk.co.vedaconsulting.mailchimp', 'css/mailchimp.css');
     
-    $webhook_url = CRM_Utils_System::url('civicrm/mailchimp/webhook', 'reset=1',  TRUE, NULL, FALSE, TRUE);
-    $this->assign( 'webhook_url', 'Webhook URL - '.$webhook_url);
-    
     // Add the API Key Element
     $this->addElement('text', 'api_key', ts('API Key'), array(
       'size' => 48,
     ));    
     
-    // Add the User Security Key Element    
-    $this->addElement('text', 'security_key', ts('Security Key'), array(
-      'size' => 24,
-    ));
-    
-    // Add Enable or Disable Debugging
-    $enableOptions = array(1 => ts('Yes'), 0 => ts('No'));
-    $this->addRadio('enable_debugging', ts('Enable Debugging'), $enableOptions, NULL);
-    
-    // Remove or Unsubscribe Preference
-    $removeOptions = array(1 => ts('Delete MailChimp Subscriber'), 0 => ts('Unsubscribe MailChimp Subscriber'));
-    $this->addRadio('list_removal', ts('List Removal'), $removeOptions, NULL);
-
     // Create the Submit Button.
     $buttons = array(
       array(
         'type' => 'submit',
         'name' => ts('Save & Test'),
       ),
+      array(
+        'type' => 'upload',
+        'name' => ts('Add another'),
+      ),
     );
-    $groups = CRM_Mailchimp_Utils::getGroupsToSync(array(), null, $membership_only = TRUE);
-    foreach ($groups as $group_id => $details) {
-      $list           = new Mailchimp_Lists(CRM_Mailchimp_Utils::mailchimp());
-      $webhookoutput  = $list->webhooks($details['list_id']);
-      if($webhookoutput[0]['sources']['api'] == 1) {
-        CRM_Mailchimp_Utils::checkDebug('CRM_Mailchimp_Form_Setting - API is set in Webhook setting for listID', $details['list_id']);
-        $listID = $details['list_id'];
-        CRM_Core_Session::setStatus(ts('API is set in Webhook setting for listID %1', array(1 => $listID)), ts('Error'), 'error');
-        break;
-      }
-    }
     // Add the Buttons.
     $this->addButtons($buttons);
   }
@@ -117,6 +94,7 @@ class CRM_Mailchimp_Form_Setting extends CRM_Core_Form {
    * @return None
    */
   public function postProcess() {
+    $webhook_url = CRM_Utils_System::url('civicrm/mailchimp/webhook', 'reset=1',  TRUE, NULL, FALSE, TRUE);
     // Store the submitted values in an array.
     $params = $this->controller->exportValues($this->_name);    
       

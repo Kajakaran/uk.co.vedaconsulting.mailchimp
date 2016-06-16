@@ -73,6 +73,16 @@ function mailchimp_civicrm_uninstall() {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_enable
  */
 function mailchimp_civicrm_enable() {
+  $query = "CREATE TABLE `mailchimp_civicrm_settng` (
+    `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Default MySQL primary key',
+    `api_key` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+    `webhook_security_key` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+    `society_unique_id` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+    `society_civicrm_group_id` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+    `society_mailchimp_list_id` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+    PRIMARY KEY (`id`)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci";
+  CRM_Core_DAO::executeQuery($query);
   return _mailchimp_civix_civicrm_enable();
 }
 
