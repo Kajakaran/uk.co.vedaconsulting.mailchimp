@@ -1,7 +1,7 @@
 <?php
-require_once 'CRM/Finance/BAO/Import/SourceAbstract.php';
+require_once 'CRM/Mailchimp/BAO/Import/SourceAbstract.php';
 
-abstract class CRM_Finance_BAO_Import_CsvAbstract extends CRM_Finance_BAO_Import_SourceAbstract {
+abstract class CRM_Mailchimp_BAO_Import_CsvAbstract extends CRM_Mailchimp_BAO_Import_SourceAbstract {
     private $csvFields = array();
     private $csvImportParams = array(
         'fieldsTerminatedBy' => ',',

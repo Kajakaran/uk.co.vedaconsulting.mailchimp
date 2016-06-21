@@ -17,7 +17,10 @@ class CRM_Mailchimp_Controller_Import extends CRM_Core_Controller {
         
         //matusz: TODO how to add extra step for justgiving?
         	$p = array(
+	          'CRM_Mailchimp_Form_Import_SourceType' => null,
 	          'CRM_Mailchimp_Form_Import_SourceUpload' => null,
+	          'CRM_Mailchimp_Form_Import_Validate' => null,
+	          'CRM_Mailchimp_Form_Import_ExtraData' => null,
 	        );
         
         $this->_stateMachine->addSequentialPages($p, $action);
@@ -31,7 +34,7 @@ class CRM_Mailchimp_Controller_Import extends CRM_Core_Controller {
     public function getImportBAO() {
         if($this->importBAO === null) {
             require_once 'CRM/Mailchimp/BAO/Import/Source.php';
-			$this->importBAO = CRM_Finance_BAO_Import_Source::factory($this->get('sourceName'));
+			$this->importBAO = CRM_Mailchimp_BAO_Import_Source::factory($this->get('sourceName'));
             $importId = $this->get('importId');
             if($importId) {
                 $this->importBAO->setImportId($importId);

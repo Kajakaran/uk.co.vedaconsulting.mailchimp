@@ -150,7 +150,7 @@ class CRM_Mailchimp_Utils_DataExchange {
         $insertFieldsSql = implode(', ', $fields);
 
         $sql = "INSERT INTO $tableName (status, $insertFieldsSql) VALUES (0, $placeholdersSql)";
-        CRM_Core_Error::debug_var("CRM_Finance_Utils_DataExchange", "import array to local DB started");
+        CRM_Core_Error::debug_var("CRM_Mailchimp_Utils_DataExchange", "import array to local DB started");
         foreach($data as $rec) {
             $params = array();
             foreach($rec as $value) {
@@ -159,7 +159,7 @@ class CRM_Mailchimp_Utils_DataExchange {
 
             $ret = CRM_Core_DAO::executeQuery($sql, $params);
         }
-        CRM_Core_Error::debug_var("CRM_Finance_Utils_DataExchange", "import array to local DB end");
+        CRM_Core_Error::debug_var("CRM_Mailchimp_Utils_DataExchange", "import array to local DB end");
 
         $this->finishProcess($startRet);
 
@@ -370,7 +370,7 @@ class CRM_Mailchimp_Utils_DataExchange {
             array($type, 'String'),
             array(date('YmdHis'), 'Timestamp'),
             array(serialize(array('fields' => $allFields, 'importedFields' => $fields)), 'String'),
-            array(CRM_Finance_Utils_DataExchange::STATUS_IMPORT_STARTED, 'Int'),
+            array(CRM_Mailchimp_Utils_DataExchange::STATUS_IMPORT_STARTED, 'Int'),
             array($source, 'String'),
             array($this->getCurrentUserId(), 'Int'),
         ));
@@ -408,7 +408,7 @@ class CRM_Mailchimp_Utils_DataExchange {
             array($id, 'Int'),
             array(date('YmdHis'), 'Timestamp'),
             array($count, 'Int'),
-            array(CRM_Finance_Utils_DataExchange::STATUS_IMPORT_FINISHED, 'Int'),
+            array(CRM_Mailchimp_Utils_DataExchange::STATUS_IMPORT_FINISHED, 'Int'),
         ));
     }
 

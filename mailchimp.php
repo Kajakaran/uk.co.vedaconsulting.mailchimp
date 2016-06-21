@@ -10,6 +10,11 @@ require_once 'vendor/mailchimp/Mailchimp/Lists.php';
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_config
  */
 function mailchimp_civicrm_config(&$config) {
+  $params = array(
+        'id' => 102,
+        'contribution_status_id' => 1,
+      );
+   //$result = civicrm_api3('contribution', 'create', $params);
   _mailchimp_civix_civicrm_config($config);
 }
 

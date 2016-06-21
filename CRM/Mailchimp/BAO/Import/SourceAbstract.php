@@ -1,9 +1,9 @@
 <?php
 
-require_once 'CRM/Finance/Utils/DataExchange.php';
-require_once 'CRM/Finance/BAO/Import/ValidateException.php';
+require_once 'CRM/Mailchimp/Utils/DataExchange.php';
+//require_once 'CRM/Finance/BAO/Import/ValidateException.php';
 
-abstract class CRM_Finance_BAO_Import_SourceAbstract {
+abstract class CRM_Mailchimp_BAO_Import_SourceAbstract {
     const STATUS_VALIDATE_STARTED = 10;
     const STATUS_VALIDATE_FINISHED = 11;
     const STATUS_PROCESS_STARTED = 20;
@@ -1251,18 +1251,10 @@ abstract class CRM_Finance_BAO_Import_SourceAbstract {
         CRM_Core_Error::debug_var("SourceAbstract-validate", "Validation Started");
         while ($dao->fetch()) {
             $rec = $dao->toArray();
+            CRM_Core_Error::debug_var("rec", $rec);
 
-            // PS Added
-            // We want the total value the file regardless of validated state
-            $status['total_import_gross_amount'] += $rec[$this->getGrossAmountField()];
-            $status['total_import_net_amount'] += $rec[$this->getNetAmountField()];
-
-            //we want to skip records which have been validated.
             if ($dao->status == self::DATA_STATUS_VALIDATE_OK) {
                 $status['skipped_valid']++;
-                //count totals
-                $status['total_gross_amount'] += $rec[$this->getGrossAmountField()];
-                $status['total_net_amount'] += $rec[$this->getNetAmountField()];
                 continue;
             } elseif ($dao->status != 0) {
                 $status['skipped_error']++;
@@ -1270,106 +1262,33 @@ abstract class CRM_Finance_BAO_Import_SourceAbstract {
             }
 
             $updateData = array();
+            
             try {
-                $ret = $this->validateRec($rec, $importData);
-
-                if (is_array($ret)) {
-                    if (!isset($ret['status'])) {
-                        throw new Exception("No status returned in " . print_r($ret));
-                    }
-                    $updateData['status'] = $ret['status'];
-                    if ($ret['update']) {
-                        if (!is_array($ret['update'])) {
-                            throw new Exception("Update param is not array");
-                        }
-                        $updateData = array_merge($updateData, $ret['update']);
-                    }
-                } else {
-                    $updateData['status'] = $ret;
-                }
-
-                if ($updateData['status'] === true) {
-                    $updateData['status'] = self::DATA_STATUS_VALIDATE_OK;
-                } elseif ($updateData['status'] === false) {
-                  $contactId     = CRM_Utils_Array::value('contact_id', $updateData, $rec['contact_id']);
-                  $softContactId = CRM_Utils_Array::value('soft_credit_contact_id', $updateData, $rec['soft_credit_contact_id']);
-
-                  if ($contactId) {
-                    $updateData['status'] = self::VALIDATE_ERR_FUNDRAISER_REF;
-                  } else if ($softContactId) {
-                    $updateData['status'] = self::VALIDATE_ERR_DONOR_REF;
-                  } else {
-                    $updateData['status'] = self::DATA_STATUS_VALIDATE_ERROR;
-                  }
-                }
-
-                //if some validation error occurs from validateValue()
-            } catch (CRM_Finance_BAO_Import_ValidateException $e) {
-                $updateData['status'] = $e->getCode();
+              $mcClient = new Mailchimp($rec['ApiKey']);
+              $mcHelper = new Mailchimp_Helper($mcClient);
+              $details  = $mcHelper->accountDetails();
+              $updateData['is_account_verified'] = TRUE;
+              $updateData['webhook_security_key'] = $rec['SocietyUniqueId'];
+              $updateData['status'] = 1;
+              $this->getDataExchange()->updateData($this->getImportId(), $dao->id, $updateData);
+              $status['validate_ok']++;
+            } catch (Mailchimp_Invalid_ApiKey $e) {
+              $updateData['status'] = $e->getCode();
+              $status['validate_error']++;
+            } catch (Mailchimp_HttpError $e) {
+              $updateData['status'] = $e->getCode();
+              $status['validate_error']++;
             }
 
-            if ($updateData['status'] === self::DATA_STATUS_VALIDATE_OK) {
-                $status['validate_ok']++;
-
-                //merge existing record with updateData - gross/net might be updated
-                $rec = array_merge($rec, $updateData);
-
-                $status['total_gross_amount'] += $rec[$this->getGrossAmountField()];
-                $status['total_net_amount'] += $rec[$this->getNetAmountField()];
-            } else {
-                $status['validate_error']++;
-            }
-
-            $this->getDataExchange()->updateData($this->getImportId(), $dao->id, $updateData);
         }
-CRM_Core_Error::debug_var("SourceAbstract-validate", "Validation end");
+        CRM_Core_Error::debug_var("SourceAbstract-validate", "Validation end");
         $status['total_valid'] = $status['validate_ok'] + $status['skipped_valid'];
         $status['total_error'] = $status['validate_error'] + $status['skipped_error'];
 
-        //round our results
-        $status['total_net_amount'] = round($status['total_net_amount'], 2);
-        $status['total_gross_amount'] = round($status['total_gross_amount'], 2);
-        $status['total_import_net_amount'] = round($status['total_import_net_amount'], 2);
-        $status['total_import_gross_amount'] = round($status['total_import_gross_amount'], 2);
 
         //update import status into fin.import table
         $importData = $this->getDataExchange()->getProcessById($this->getImportId());
         $data = $importData['data'];
-
-        //mzeman: http://support.vedaconsulting.co.uk/issues/213
-        //check for duplicated imports
-        $processIds = $this->getDataExchange()->findProcessIds(array(
-            'source' => $this->getSourceName(),
-            'count' => $importData['count']
-        ));
-
-        $duplicates = array();
-
-        foreach($processIds as $processId) {
-            //we skip current import
-            if($processId == $this->getImportId()) {
-                continue;
-            }
-
-            $process = $this->getDataExchange()->getProcessById($processId);
-            //we skip imports without status stored
-            //they are either old imports (when this wasn't implemented yet) or imports just under way? TODO How to check for simultaneous import?
-            if(!isset($process['data']['status']['total_net_amount'])) {
-                continue;
-            }
-
-            $totalNetAmount = $process['data']['status']['total_net_amount'];
-            if($totalNetAmount != $status['total_net_amount']) {
-                continue;
-            }
-
-            //when we reach this poing we have got possible duplicate import
-            $duplicates[] = $processId;
-        }
-
-        $status['duplicates'] = $duplicates;
-
-        //END: check for duplicated imports
 
         $data['status'] = $status;
         $this->getDataExchange()->updateProcessData($this->getImportId(), $data);
@@ -1537,31 +1456,10 @@ CRM_Core_Error::debug_var("SourceAbstract-validate", "Validation end");
      */
     protected function getDataExchange() {
         if ($this->dataExchange === null) {
-            $this->dataExchange = new CRM_Finance_Utils_DataExchange();
+            $this->dataExchange = new CRM_Mailchimp_Utils_DataExchange();
             $this->dataExchange->setAlwaysCreateFields(array(
-                'contact_id',
-                'contact_display_name',
-                'soft_credit_contact_id',
-                'soft_credit_contact_display_name',
-                'gross_amount',
-                'net_amount',
-                'fee_amount',
-                'transaction_id',
-                'source',
-                'received_date',
-                //'paid_by',
-                //'receipt_date',
-                //'contribution_status',
-                'note',
-                //'non_deductible_amount',
-                //'invoice_id',
-                //'thank_you_sent',
-                'campaign_id',
-                'financial_type_id',
-                'in_memory_contact_id',
-                'gift_aid_eligible',
-                'direct_transfer_id',
-                'soft_credit_direct_transfer_id',
+                'webhook_security_key',
+                'is_account_verified',
             ));
         }
 

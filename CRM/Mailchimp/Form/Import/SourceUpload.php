@@ -37,8 +37,8 @@ class CRM_Mailchimp_Form_Import_SourceUpload extends CRM_Core_Form {
     }
     
     private function getImportTypeOptions() {
-        //require_once('CRM/Finance/BAO/Import/Source.php');
-        //return CRM_Finance_BAO_Import_Source::getAllAsOptions();
+        require_once('CRM/Mailchimp/BAO/Import/Source.php');
+        return CRM_Mailchimp_BAO_Import_Source::getAllAsOptions();
     }
     
 //    public function setDefaultValues() {
